@@ -37,7 +37,8 @@ export const Route = createFileRoute("/app")({
 
 type Asset =
   | { id: string; kind: "signature"; dataUrl: string; label: string }
-  | { id: string; kind: "stamp"; text: string; color: string; label: string };
+  | { id: string; kind: "stamp"; variant: "text"; text: string; color: string; label: string }
+  | { id: string; kind: "stamp"; variant: "image"; dataUrl: string; label: string };
 
 type Placement = {
   id: string;
@@ -48,6 +49,19 @@ type Placement = {
   wRatio: number;
   withDate: boolean;
 };
+
+const STAMP_PRESETS: { text: string; color: string; label: string }[] = [
+  { text: "APPROVED", color: "#059669", label: "Approved" },
+  { text: "PAID", color: "#1d4ed8", label: "Paid" },
+  { text: "RECEIVED", color: "#eb6734", label: "Received" },
+  { text: "CONFIDENTIAL", color: "#dc2626", label: "Confidential" },
+  { text: "CERTIFIED", color: "#7c3aed", label: "Certified" },
+  { text: "DRAFT", color: "#525252", label: "Draft" },
+  { text: "REJECTED", color: "#b91c1c", label: "Rejected" },
+  { text: "URGENT", color: "#ea580c", label: "Urgent" },
+];
+
+const ASSETS_KEY = "signstamp.assets.v1";
 
 type PageRangeMode = "all" | "first" | "last" | "custom";
 
@@ -72,7 +86,15 @@ function AppPage() {
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => setEmail(data.user?.email ?? null));
+    try {
+      const raw = localStorage.getItem(ASSETS_KEY);
+      if (raw) setAssets(JSON.parse(raw));
+    } catch {}
   }, []);
+
+  useEffect(() => {
+    try { localStorage.setItem(ASSETS_KEY, JSON.stringify(assets)); } catch {}
+  }, [assets]);
 
   async function signOut() {
     await supabase.auth.signOut();
@@ -174,12 +196,14 @@ function AppPage() {
       const font = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
       const today = new Date().toLocaleDateString();
 
-      // Pre-embed signature images
-      const sigImages = new Map<string, any>();
+      // Pre-embed signature + image-stamp images
+      const embeddedImages = new Map<string, any>();
       for (const a of assets) {
-        if (a.kind === "signature") {
-          const bytes = Uint8Array.from(atob(a.dataUrl.split(",")[1]), (c) => c.charCodeAt(0));
-          sigImages.set(a.id, await pdfDoc.embedPng(bytes));
+        if (a.kind === "signature" || (a.kind === "stamp" && a.variant === "image")) {
+          const dataUrl = (a as any).dataUrl as string;
+          const bytes = Uint8Array.from(atob(dataUrl.split(",")[1]), (c) => c.charCodeAt(0));
+          const isJpeg = dataUrl.startsWith("data:image/jpeg") || dataUrl.startsWith("data:image/jpg");
+          embeddedImages.set(a.id, isJpeg ? await pdfDoc.embedJpg(bytes) : await pdfDoc.embedPng(bytes));
         }
       }
 
@@ -191,7 +215,17 @@ function AppPage() {
           if (!asset) continue;
           const w = pl.wRatio * pw;
           if (asset.kind === "signature") {
-            const img = sigImages.get(asset.id);
+            const img = embeddedImages.get(asset.id);
+            const ratio = img.height / img.width;
+            const h = w * ratio;
+            const x = pl.xRatio * pw;
+            const y = ph - pl.yRatio * ph - h;
+            page.drawImage(img, { x, y, width: w, height: h });
+            if (pl.withDate) {
+              page.drawText(today, { x, y: y - 14, size: 10, font, color: rgb(0.2, 0.2, 0.2) });
+            }
+          } else if (asset.variant === "image") {
+            const img = embeddedImages.get(asset.id);
             const ratio = img.height / img.width;
             const h = w * ratio;
             const x = pl.xRatio * pw;
@@ -312,6 +346,8 @@ function AppPage() {
                 <div key={a.id} className="flex items-center gap-2 rounded-lg border border-border bg-muted/30 p-2">
                   <div className="flex h-10 w-16 flex-none items-center justify-center overflow-hidden rounded bg-white">
                     {a.kind === "signature" ? (
+                      <img src={a.dataUrl} alt="" className="max-h-full max-w-full object-contain" />
+                    ) : a.variant === "image" ? (
                       <img src={a.dataUrl} alt="" className="max-h-full max-w-full object-contain" />
                     ) : (
                       <span className="text-[10px] font-extrabold tracking-widest" style={{ color: a.color, border: `1.5px solid ${a.color}`, padding: "1px 4px" }}>{a.text.toUpperCase()}</span>
@@ -470,10 +506,10 @@ function AppPage() {
       <StampDialog
         open={stampOpen}
         onOpenChange={setStampOpen}
-        onSave={(text, color, label) => {
-          setAssets((prev) => [...prev, { id: crypto.randomUUID(), kind: "stamp", text, color, label: label || text }]);
+        onSave={(asset) => {
+          setAssets((prev) => [...prev, asset]);
           setStampOpen(false);
-          toast.success("Stamp saved");
+          toast.success("Stamp added");
         }}
       />
     </div>
@@ -540,6 +576,8 @@ function PagePreview({
           >
             {asset.kind === "signature" ? (
               <img src={asset.dataUrl} alt="sig" className="pointer-events-none w-full" draggable={false} />
+            ) : asset.variant === "image" ? (
+              <img src={asset.dataUrl} alt="stamp" className="pointer-events-none w-full" draggable={false} />
             ) : (
               <div
                 className="pointer-events-none font-display font-extrabold uppercase tracking-widest"
@@ -556,7 +594,7 @@ function PagePreview({
                 {pl.withDate && <div className="text-[9px] opacity-80">{new Date().toLocaleDateString()}</div>}
               </div>
             )}
-            {pl.withDate && asset.kind === "signature" && (
+            {pl.withDate && (asset.kind === "signature" || (asset.kind === "stamp" && asset.variant === "image")) && (
               <div className="pointer-events-none mt-0.5 text-[10px] font-medium text-foreground/80">
                 {new Date().toLocaleDateString()}
               </div>
@@ -649,55 +687,123 @@ function SignatureDialog({
 
 function StampDialog({
   open, onOpenChange, onSave,
-}: { open: boolean; onOpenChange: (v: boolean) => void; onSave: (text: string, color: string, label: string) => void }) {
-  const presets = ["APPROVED", "RECEIVED", "PAID", "CONFIDENTIAL", "CERTIFIED", "DRAFT"];
-  const colors = ["#eb6734", "#dc2626", "#1d4ed8", "#059669", "#000000"];
+}: { open: boolean; onOpenChange: (v: boolean) => void; onSave: (asset: Asset) => void }) {
+  const colors = ["#eb6734", "#dc2626", "#1d4ed8", "#059669", "#7c3aed", "#000000"];
+  const [tab, setTab] = useState("presets");
   const [text, setText] = useState("APPROVED");
   const [color, setColor] = useState("#eb6734");
   const [label, setLabel] = useState("");
-  useEffect(() => { if (open) { setText("APPROVED"); setColor("#eb6734"); setLabel(""); } }, [open]);
+  const [uploaded, setUploaded] = useState<string | null>(null);
+  const [uploadLabel, setUploadLabel] = useState("");
+
+  useEffect(() => {
+    if (open) {
+      setTab("presets"); setText("APPROVED"); setColor("#eb6734");
+      setLabel(""); setUploaded(null); setUploadLabel("");
+    }
+  }, [open]);
+
+  function addPreset(p: { text: string; color: string; label: string }) {
+    onSave({ id: crypto.randomUUID(), kind: "stamp", variant: "text", text: p.text, color: p.color, label: p.label });
+  }
+  function saveCustom() {
+    if (!text.trim()) return toast.error("Enter stamp text");
+    onSave({
+      id: crypto.randomUUID(), kind: "stamp", variant: "text",
+      text: text.trim(), color, label: label.trim() || text.trim(),
+    });
+  }
+  function saveUploaded() {
+    if (!uploaded) return toast.error("Upload a stamp image");
+    onSave({
+      id: crypto.randomUUID(), kind: "stamp", variant: "image",
+      dataUrl: uploaded, label: uploadLabel.trim() || "Uploaded stamp",
+    });
+  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
-        <DialogHeader><DialogTitle>Create stamp</DialogTitle></DialogHeader>
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <Label>Text</Label>
-            <Input value={text} onChange={(e) => setText(e.target.value)} maxLength={24} />
-            <div className="flex flex-wrap gap-1.5">
-              {presets.map((p) => (
-                <button key={p} type="button" onClick={() => setText(p)} className="rounded-full border border-border bg-muted/40 px-2.5 py-1 text-xs hover:border-primary">
-                  {p}
+      <DialogContent className="max-w-lg">
+        <DialogHeader><DialogTitle>Add stamp</DialogTitle></DialogHeader>
+        <Tabs value={tab} onValueChange={setTab}>
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="presets">Presets</TabsTrigger>
+            <TabsTrigger value="custom">Custom</TabsTrigger>
+            <TabsTrigger value="upload">Upload</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="presets" className="mt-4">
+            <p className="mb-3 text-xs text-muted-foreground">Click a default style to add it to your stamps.</p>
+            <div className="grid grid-cols-2 gap-2">
+              {STAMP_PRESETS.map((p) => (
+                <button
+                  key={p.text}
+                  type="button"
+                  onClick={() => addPreset(p)}
+                  className="flex items-center justify-center rounded-lg border border-border bg-white px-3 py-4 transition hover:border-primary hover:shadow-brand"
+                >
+                  <span
+                    className="inline-block font-display font-extrabold uppercase tracking-widest"
+                    style={{ color: p.color, border: `2.5px solid ${p.color}`, padding: "4px 10px", transform: "rotate(-6deg)", fontSize: 14 }}
+                  >
+                    {p.text}
+                  </span>
                 </button>
               ))}
             </div>
-          </div>
-          <div className="space-y-2">
-            <Label>Color</Label>
-            <div className="flex gap-2">
-              {colors.map((c) => (
-                <button key={c} type="button" onClick={() => setColor(c)}
-                  className={`h-8 w-8 rounded-full border-2 ${color === c ? "border-foreground" : "border-transparent"}`}
-                  style={{ backgroundColor: c }}
-                />
-              ))}
+          </TabsContent>
+
+          <TabsContent value="custom" className="mt-4 space-y-4">
+            <div className="space-y-2">
+              <Label>Text</Label>
+              <Input value={text} onChange={(e) => setText(e.target.value)} maxLength={24} />
             </div>
-          </div>
-          <div className="space-y-2">
-            <Label>Label (optional)</Label>
-            <Input value={label} onChange={(e) => setLabel(e.target.value)} placeholder={text} />
-          </div>
-          <div className="rounded-lg border border-border bg-white p-6 text-center">
-            <span className="inline-block font-display text-2xl font-extrabold uppercase tracking-widest"
-              style={{ color, border: `3px solid ${color}`, padding: "6px 14px", transform: "rotate(-6deg)" }}>
-              {text}
-            </span>
-          </div>
-        </div>
+            <div className="space-y-2">
+              <Label>Color</Label>
+              <div className="flex gap-2">
+                {colors.map((c) => (
+                  <button key={c} type="button" onClick={() => setColor(c)}
+                    className={`h-8 w-8 rounded-full border-2 ${color === c ? "border-foreground" : "border-transparent"}`}
+                    style={{ backgroundColor: c }}
+                  />
+                ))}
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label>Label (optional)</Label>
+              <Input value={label} onChange={(e) => setLabel(e.target.value)} placeholder={text} />
+            </div>
+            <div className="rounded-lg border border-border bg-white p-6 text-center">
+              <span className="inline-block font-display text-2xl font-extrabold uppercase tracking-widest"
+                style={{ color, border: `3px solid ${color}`, padding: "6px 14px", transform: "rotate(-6deg)" }}>
+                {text || "PREVIEW"}
+              </span>
+            </div>
+            <Button onClick={saveCustom} disabled={!text.trim()} className="w-full bg-gradient-brand text-primary-foreground">Save custom stamp</Button>
+          </TabsContent>
+
+          <TabsContent value="upload" className="mt-4 space-y-4">
+            <p className="text-xs text-muted-foreground">Upload a PNG or JPG of your official stamp. Transparent PNGs work best.</p>
+            <Input type="file" accept="image/png,image/jpeg" onChange={(e) => {
+              const f = e.target.files?.[0]; if (!f) return;
+              const r = new FileReader();
+              r.onload = () => setUploaded(r.result as string);
+              r.readAsDataURL(f);
+            }} />
+            {uploaded && (
+              <div className="rounded-lg border border-border bg-[repeating-conic-gradient(#f4f4f5_0%_25%,#fff_0%_50%)_50%_/_16px_16px] p-4 text-center">
+                <img src={uploaded} alt="stamp" className="mx-auto max-h-40" />
+              </div>
+            )}
+            <div className="space-y-2">
+              <Label>Label</Label>
+              <Input value={uploadLabel} onChange={(e) => setUploadLabel(e.target.value)} placeholder="Company stamp" />
+            </div>
+            <Button onClick={saveUploaded} disabled={!uploaded} className="w-full bg-gradient-brand text-primary-foreground">Save uploaded stamp</Button>
+          </TabsContent>
+        </Tabs>
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-          <Button onClick={() => onSave(text.trim(), color, label.trim())} disabled={!text.trim()} className="bg-gradient-brand text-primary-foreground">Save stamp</Button>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>Close</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
