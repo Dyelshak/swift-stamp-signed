@@ -12,6 +12,8 @@ import {
   Move,
   FileText,
   Plus,
+  Pencil,
+  History,
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
