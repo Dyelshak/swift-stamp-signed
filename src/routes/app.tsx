@@ -458,10 +458,13 @@ function AppPage() {
                     <p className="truncate text-sm font-medium">{a.label}</p>
                     <p className="text-xs text-muted-foreground capitalize">{a.kind}</p>
                   </div>
-                  <Button size="sm" variant="ghost" onClick={() => addPlacement(a.id)} disabled={!pageImages.length}>
+                  <Button size="sm" variant="ghost" title="Add to page" onClick={() => addPlacement(a.id)} disabled={!pageImages.length}>
                     <Plus className="h-4 w-4" />
                   </Button>
-                  <Button size="sm" variant="ghost" onClick={() => setAssets((prev) => prev.filter((x) => x.id !== a.id))}>
+                  <Button size="sm" variant="ghost" title="Rename" onClick={() => renameAsset(a.id)}>
+                    <Pencil className="h-4 w-4" />
+                  </Button>
+                  <Button size="sm" variant="ghost" title="Delete" onClick={() => deleteAsset(a.id)}>
                     <Trash2 className="h-4 w-4 text-destructive" />
                   </Button>
                 </div>
