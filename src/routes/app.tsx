@@ -37,7 +37,8 @@ export const Route = createFileRoute("/app")({
 
 type Asset =
   | { id: string; kind: "signature"; dataUrl: string; label: string }
-  | { id: string; kind: "stamp"; text: string; color: string; label: string };
+  | { id: string; kind: "stamp"; variant: "text"; text: string; color: string; label: string }
+  | { id: string; kind: "stamp"; variant: "image"; dataUrl: string; label: string };
 
 type Placement = {
   id: string;
@@ -48,6 +49,19 @@ type Placement = {
   wRatio: number;
   withDate: boolean;
 };
+
+const STAMP_PRESETS: { text: string; color: string; label: string }[] = [
+  { text: "APPROVED", color: "#059669", label: "Approved" },
+  { text: "PAID", color: "#1d4ed8", label: "Paid" },
+  { text: "RECEIVED", color: "#eb6734", label: "Received" },
+  { text: "CONFIDENTIAL", color: "#dc2626", label: "Confidential" },
+  { text: "CERTIFIED", color: "#7c3aed", label: "Certified" },
+  { text: "DRAFT", color: "#525252", label: "Draft" },
+  { text: "REJECTED", color: "#b91c1c", label: "Rejected" },
+  { text: "URGENT", color: "#ea580c", label: "Urgent" },
+];
+
+const ASSETS_KEY = "signstamp.assets.v1";
 
 type PageRangeMode = "all" | "first" | "last" | "custom";
 
