@@ -383,6 +383,11 @@ function AppPage() {
           </Link>
           <div className="flex items-center gap-3">
             <span className="hidden text-sm text-muted-foreground sm:inline">{email}</span>
+            <Link to="/history">
+              <Button variant="ghost" size="sm">
+                <History className="mr-2 h-4 w-4" /> History
+              </Button>
+            </Link>
             <Button variant="ghost" size="sm" onClick={signOut}>
               <LogOut className="mr-2 h-4 w-4" /> Sign out
             </Button>
