@@ -92,6 +92,12 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: "SignStamp — Fast PDF Signing & Stamping" },
+      { name: "description", content: "SignStamp is a fast, smart tool to sign and stamp PDFs. Bulk multi-page signing, drag-and-drop placement, auto date stamps, and instant download." },
+      { property: "og:description", content: "SignStamp is a fast, smart tool to sign and stamp PDFs. Bulk multi-page signing, drag-and-drop placement, auto date stamps, and instant download." },
+      { name: "twitter:description", content: "SignStamp is a fast, smart tool to sign and stamp PDFs. Bulk multi-page signing, drag-and-drop placement, auto date stamps, and instant download." },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/7097ca0c-2804-4b29-9768-de0057de444f/id-preview-fcb7ffb9--0a3971aa-12ba-4233-a826-8b6b4a9b7df0.lovable.app-1783423881587.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/7097ca0c-2804-4b29-9768-de0057de444f/id-preview-fcb7ffb9--0a3971aa-12ba-4233-a826-8b6b4a9b7df0.lovable.app-1783423881587.png" },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
