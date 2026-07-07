@@ -188,12 +188,14 @@ function AppPage() {
       const font = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
       const today = new Date().toLocaleDateString();
 
-      // Pre-embed signature images
-      const sigImages = new Map<string, any>();
+      // Pre-embed signature + image-stamp images
+      const embeddedImages = new Map<string, any>();
       for (const a of assets) {
-        if (a.kind === "signature") {
-          const bytes = Uint8Array.from(atob(a.dataUrl.split(",")[1]), (c) => c.charCodeAt(0));
-          sigImages.set(a.id, await pdfDoc.embedPng(bytes));
+        if (a.kind === "signature" || (a.kind === "stamp" && a.variant === "image")) {
+          const dataUrl = (a as any).dataUrl as string;
+          const bytes = Uint8Array.from(atob(dataUrl.split(",")[1]), (c) => c.charCodeAt(0));
+          const isJpeg = dataUrl.startsWith("data:image/jpeg") || dataUrl.startsWith("data:image/jpg");
+          embeddedImages.set(a.id, isJpeg ? await pdfDoc.embedJpg(bytes) : await pdfDoc.embedPng(bytes));
         }
       }
 
@@ -205,7 +207,17 @@ function AppPage() {
           if (!asset) continue;
           const w = pl.wRatio * pw;
           if (asset.kind === "signature") {
-            const img = sigImages.get(asset.id);
+            const img = embeddedImages.get(asset.id);
+            const ratio = img.height / img.width;
+            const h = w * ratio;
+            const x = pl.xRatio * pw;
+            const y = ph - pl.yRatio * ph - h;
+            page.drawImage(img, { x, y, width: w, height: h });
+            if (pl.withDate) {
+              page.drawText(today, { x, y: y - 14, size: 10, font, color: rgb(0.2, 0.2, 0.2) });
+            }
+          } else if (asset.variant === "image") {
+            const img = embeddedImages.get(asset.id);
             const ratio = img.height / img.width;
             const h = w * ratio;
             const x = pl.xRatio * pw;
