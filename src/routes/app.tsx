@@ -215,7 +215,7 @@ function AppPage() {
     setApplying(true);
     setOutputUrl(null);
     try {
-      const { PDFDocument, StandardFonts, rgb, degrees } = await import("pdf-lib");
+      const { PDFDocument, StandardFonts, rgb, degrees, PDFName, PDFString, PDFArray } = await import("pdf-lib");
       const pdfDoc = await PDFDocument.load(pdfBytes.slice());
       const totalPages = pdfDoc.getPageCount();
       const targetPages = resolvePages(totalPages);
@@ -223,6 +223,9 @@ function AppPage() {
 
       const font = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
       const today = new Date().toLocaleDateString();
+      const nowISO = new Date().toISOString();
+      const nowHuman = new Date().toLocaleString();
+      const signer = email || "unknown user";
 
       // Pre-embed signature + image-stamp images
       const embeddedImages = new Map<string, any>();
@@ -232,6 +235,30 @@ function AppPage() {
           const bytes = Uint8Array.from(atob(dataUrl.split(",")[1]), (c) => c.charCodeAt(0));
           const isJpeg = dataUrl.startsWith("data:image/jpeg") || dataUrl.startsWith("data:image/jpg");
           embeddedImages.set(a.id, isJpeg ? await pdfDoc.embedJpg(bytes) : await pdfDoc.embedPng(bytes));
+        }
+      }
+
+      // Helper: add a hover-tooltip annotation over a rectangle
+      function addTooltip(page: any, x: number, y: number, w: number, h: number, label: string, kind: string) {
+        const contents = `SignStamp — ${kind}\nLabel: ${label}\nSigned by: ${signer}\nTimestamp: ${nowHuman}\nISO: ${nowISO}`;
+        const annot = pdfDoc.context.obj({
+          Type: "Annot",
+          Subtype: "Square",
+          Rect: [x, y, x + w, y + h],
+          Contents: PDFString.of(contents),
+          T: PDFString.of("SignStamp"),
+          F: 4, // printable
+          C: [],
+          CA: 0,
+          Border: [0, 0, 0],
+          BS: pdfDoc.context.obj({ W: 0, S: PDFName.of("S") }),
+        });
+        const annotRef = pdfDoc.context.register(annot);
+        const existing = page.node.lookup(PDFName.of("Annots"));
+        if (existing instanceof PDFArray) {
+          existing.push(annotRef);
+        } else {
+          page.node.set(PDFName.of("Annots"), pdfDoc.context.obj([annotRef]));
         }
       }
 
@@ -252,6 +279,7 @@ function AppPage() {
             if (pl.withDate) {
               page.drawText(today, { x, y: y - 14, size: 10, font, color: rgb(0.2, 0.2, 0.2) });
             }
+            addTooltip(page, x, y, w, h, asset.label, "Signature");
           } else if (asset.variant === "image") {
             const img = embeddedImages.get(asset.id);
             const ratio = img.height / img.width;
@@ -262,8 +290,8 @@ function AppPage() {
             if (pl.withDate) {
               page.drawText(today, { x, y: y - 14, size: 10, font, color: rgb(0.2, 0.2, 0.2) });
             }
+            addTooltip(page, x, y, w, h, asset.label, "Stamp");
           } else {
-            // stamp: draw text with box
             const size = Math.max(14, w * 0.16);
             const text = asset.text.toUpperCase();
             const textWidth = font.widthOfTextAtSize(text, size);
@@ -286,14 +314,37 @@ function AppPage() {
                 x: x + 12, y: y + 6, size: 9, font, color: rgb(r, g, b), rotate: degrees(-6),
               });
             }
+            addTooltip(page, x, y, boxW, boxH, asset.label, `Stamp: ${asset.text}`);
           }
         }
       }
 
+      // Embed metadata about the signing action
+      pdfDoc.setSubject(`Signed via SignStamp by ${signer} at ${nowISO}`);
+      pdfDoc.setModificationDate(new Date());
+      pdfDoc.setKeywords(["SignStamp", signer, nowISO]);
+
       const out = await pdfDoc.save();
       const blob = new Blob([out as BlobPart], { type: "application/pdf" });
       setOutputUrl(URL.createObjectURL(blob));
-      toast.success(`Applied to ${targetPages.length} page${targetPages.length > 1 ? "s" : ""}`);
+
+      // Save to history (as base64 data URL)
+      const b64 = await blobToDataUrl(blob);
+      const originalName = pdfFile?.name || "document.pdf";
+      const outputName = `signed-${originalName}`;
+      saveHistoryEntry({
+        id: crypto.randomUUID(),
+        fileName: outputName,
+        originalName,
+        signedAt: nowISO,
+        pages: totalPages,
+        placementCount: placements.length * targetPages.length,
+        signerEmail: signer,
+        dataUrl: b64,
+        sizeBytes: blob.size,
+      });
+
+      toast.success(`Applied to ${targetPages.length} page${targetPages.length > 1 ? "s" : ""} — saved to history`);
     } catch (err: any) {
       console.error(err);
       toast.error(err.message || "Failed to apply");
