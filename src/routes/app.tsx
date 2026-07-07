@@ -64,6 +64,32 @@ const STAMP_PRESETS: { text: string; color: string; label: string }[] = [
 ];
 
 const ASSETS_KEY = "signstamp.assets.v1";
+const HISTORY_KEY = "signstamp.history.v1";
+
+export type HistoryEntry = {
+  id: string;
+  fileName: string;
+  originalName: string;
+  signedAt: string; // ISO
+  pages: number;
+  placementCount: number;
+  signerEmail: string | null;
+  dataUrl: string; // base64 data URL of signed PDF
+  sizeBytes: number;
+};
+
+function saveHistoryEntry(entry: HistoryEntry) {
+  try {
+    const raw = localStorage.getItem(HISTORY_KEY);
+    const list: HistoryEntry[] = raw ? JSON.parse(raw) : [];
+    list.unshift(entry);
+    // Keep last 25 to avoid quota issues
+    const trimmed = list.slice(0, 25);
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(trimmed));
+  } catch (e) {
+    console.warn("Could not save history entry", e);
+  }
+}
 
 type PageRangeMode = "all" | "first" | "last" | "custom";
 
