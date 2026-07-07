@@ -568,6 +568,8 @@ function PagePreview({
           >
             {asset.kind === "signature" ? (
               <img src={asset.dataUrl} alt="sig" className="pointer-events-none w-full" draggable={false} />
+            ) : asset.variant === "image" ? (
+              <img src={asset.dataUrl} alt="stamp" className="pointer-events-none w-full" draggable={false} />
             ) : (
               <div
                 className="pointer-events-none font-display font-extrabold uppercase tracking-widest"
@@ -584,7 +586,7 @@ function PagePreview({
                 {pl.withDate && <div className="text-[9px] opacity-80">{new Date().toLocaleDateString()}</div>}
               </div>
             )}
-            {pl.withDate && asset.kind === "signature" && (
+            {pl.withDate && (asset.kind === "signature" || (asset.kind === "stamp" && asset.variant === "image")) && (
               <div className="pointer-events-none mt-0.5 text-[10px] font-medium text-foreground/80">
                 {new Date().toLocaleDateString()}
               </div>
