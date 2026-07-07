@@ -339,6 +339,8 @@ function AppPage() {
                   <div className="flex h-10 w-16 flex-none items-center justify-center overflow-hidden rounded bg-white">
                     {a.kind === "signature" ? (
                       <img src={a.dataUrl} alt="" className="max-h-full max-w-full object-contain" />
+                    ) : a.variant === "image" ? (
+                      <img src={a.dataUrl} alt="" className="max-h-full max-w-full object-contain" />
                     ) : (
                       <span className="text-[10px] font-extrabold tracking-widest" style={{ color: a.color, border: `1.5px solid ${a.color}`, padding: "1px 4px" }}>{a.text.toUpperCase()}</span>
                     )}
