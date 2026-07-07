@@ -679,55 +679,123 @@ function SignatureDialog({
 
 function StampDialog({
   open, onOpenChange, onSave,
-}: { open: boolean; onOpenChange: (v: boolean) => void; onSave: (text: string, color: string, label: string) => void }) {
-  const presets = ["APPROVED", "RECEIVED", "PAID", "CONFIDENTIAL", "CERTIFIED", "DRAFT"];
-  const colors = ["#eb6734", "#dc2626", "#1d4ed8", "#059669", "#000000"];
+}: { open: boolean; onOpenChange: (v: boolean) => void; onSave: (asset: Asset) => void }) {
+  const colors = ["#eb6734", "#dc2626", "#1d4ed8", "#059669", "#7c3aed", "#000000"];
+  const [tab, setTab] = useState("presets");
   const [text, setText] = useState("APPROVED");
   const [color, setColor] = useState("#eb6734");
   const [label, setLabel] = useState("");
-  useEffect(() => { if (open) { setText("APPROVED"); setColor("#eb6734"); setLabel(""); } }, [open]);
+  const [uploaded, setUploaded] = useState<string | null>(null);
+  const [uploadLabel, setUploadLabel] = useState("");
+
+  useEffect(() => {
+    if (open) {
+      setTab("presets"); setText("APPROVED"); setColor("#eb6734");
+      setLabel(""); setUploaded(null); setUploadLabel("");
+    }
+  }, [open]);
+
+  function addPreset(p: { text: string; color: string; label: string }) {
+    onSave({ id: crypto.randomUUID(), kind: "stamp", variant: "text", text: p.text, color: p.color, label: p.label });
+  }
+  function saveCustom() {
+    if (!text.trim()) return toast.error("Enter stamp text");
+    onSave({
+      id: crypto.randomUUID(), kind: "stamp", variant: "text",
+      text: text.trim(), color, label: label.trim() || text.trim(),
+    });
+  }
+  function saveUploaded() {
+    if (!uploaded) return toast.error("Upload a stamp image");
+    onSave({
+      id: crypto.randomUUID(), kind: "stamp", variant: "image",
+      dataUrl: uploaded, label: uploadLabel.trim() || "Uploaded stamp",
+    });
+  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
-        <DialogHeader><DialogTitle>Create stamp</DialogTitle></DialogHeader>
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <Label>Text</Label>
-            <Input value={text} onChange={(e) => setText(e.target.value)} maxLength={24} />
-            <div className="flex flex-wrap gap-1.5">
-              {presets.map((p) => (
-                <button key={p} type="button" onClick={() => setText(p)} className="rounded-full border border-border bg-muted/40 px-2.5 py-1 text-xs hover:border-primary">
-                  {p}
+      <DialogContent className="max-w-lg">
+        <DialogHeader><DialogTitle>Add stamp</DialogTitle></DialogHeader>
+        <Tabs value={tab} onValueChange={setTab}>
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="presets">Presets</TabsTrigger>
+            <TabsTrigger value="custom">Custom</TabsTrigger>
+            <TabsTrigger value="upload">Upload</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="presets" className="mt-4">
+            <p className="mb-3 text-xs text-muted-foreground">Click a default style to add it to your stamps.</p>
+            <div className="grid grid-cols-2 gap-2">
+              {STAMP_PRESETS.map((p) => (
+                <button
+                  key={p.text}
+                  type="button"
+                  onClick={() => addPreset(p)}
+                  className="flex items-center justify-center rounded-lg border border-border bg-white px-3 py-4 transition hover:border-primary hover:shadow-brand"
+                >
+                  <span
+                    className="inline-block font-display font-extrabold uppercase tracking-widest"
+                    style={{ color: p.color, border: `2.5px solid ${p.color}`, padding: "4px 10px", transform: "rotate(-6deg)", fontSize: 14 }}
+                  >
+                    {p.text}
+                  </span>
                 </button>
               ))}
             </div>
-          </div>
-          <div className="space-y-2">
-            <Label>Color</Label>
-            <div className="flex gap-2">
-              {colors.map((c) => (
-                <button key={c} type="button" onClick={() => setColor(c)}
-                  className={`h-8 w-8 rounded-full border-2 ${color === c ? "border-foreground" : "border-transparent"}`}
-                  style={{ backgroundColor: c }}
-                />
-              ))}
+          </TabsContent>
+
+          <TabsContent value="custom" className="mt-4 space-y-4">
+            <div className="space-y-2">
+              <Label>Text</Label>
+              <Input value={text} onChange={(e) => setText(e.target.value)} maxLength={24} />
             </div>
-          </div>
-          <div className="space-y-2">
-            <Label>Label (optional)</Label>
-            <Input value={label} onChange={(e) => setLabel(e.target.value)} placeholder={text} />
-          </div>
-          <div className="rounded-lg border border-border bg-white p-6 text-center">
-            <span className="inline-block font-display text-2xl font-extrabold uppercase tracking-widest"
-              style={{ color, border: `3px solid ${color}`, padding: "6px 14px", transform: "rotate(-6deg)" }}>
-              {text}
-            </span>
-          </div>
-        </div>
+            <div className="space-y-2">
+              <Label>Color</Label>
+              <div className="flex gap-2">
+                {colors.map((c) => (
+                  <button key={c} type="button" onClick={() => setColor(c)}
+                    className={`h-8 w-8 rounded-full border-2 ${color === c ? "border-foreground" : "border-transparent"}`}
+                    style={{ backgroundColor: c }}
+                  />
+                ))}
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label>Label (optional)</Label>
+              <Input value={label} onChange={(e) => setLabel(e.target.value)} placeholder={text} />
+            </div>
+            <div className="rounded-lg border border-border bg-white p-6 text-center">
+              <span className="inline-block font-display text-2xl font-extrabold uppercase tracking-widest"
+                style={{ color, border: `3px solid ${color}`, padding: "6px 14px", transform: "rotate(-6deg)" }}>
+                {text || "PREVIEW"}
+              </span>
+            </div>
+            <Button onClick={saveCustom} disabled={!text.trim()} className="w-full bg-gradient-brand text-primary-foreground">Save custom stamp</Button>
+          </TabsContent>
+
+          <TabsContent value="upload" className="mt-4 space-y-4">
+            <p className="text-xs text-muted-foreground">Upload a PNG or JPG of your official stamp. Transparent PNGs work best.</p>
+            <Input type="file" accept="image/png,image/jpeg" onChange={(e) => {
+              const f = e.target.files?.[0]; if (!f) return;
+              const r = new FileReader();
+              r.onload = () => setUploaded(r.result as string);
+              r.readAsDataURL(f);
+            }} />
+            {uploaded && (
+              <div className="rounded-lg border border-border bg-[repeating-conic-gradient(#f4f4f5_0%_25%,#fff_0%_50%)_50%_/_16px_16px] p-4 text-center">
+                <img src={uploaded} alt="stamp" className="mx-auto max-h-40" />
+              </div>
+            )}
+            <div className="space-y-2">
+              <Label>Label</Label>
+              <Input value={uploadLabel} onChange={(e) => setUploadLabel(e.target.value)} placeholder="Company stamp" />
+            </div>
+            <Button onClick={saveUploaded} disabled={!uploaded} className="w-full bg-gradient-brand text-primary-foreground">Save uploaded stamp</Button>
+          </TabsContent>
+        </Tabs>
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-          <Button onClick={() => onSave(text.trim(), color, label.trim())} disabled={!text.trim()} className="bg-gradient-brand text-primary-foreground">Save stamp</Button>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>Close</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
