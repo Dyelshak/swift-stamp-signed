@@ -189,6 +189,23 @@ function AppPage() {
     setPlacements((prev) => prev.filter((p) => p.id !== id));
     if (selectedPlacement === id) setSelectedPlacement(null);
   }
+  function renameAsset(id: string) {
+    const current = assets.find((a) => a.id === id);
+    if (!current) return;
+    const next = window.prompt("Rename asset", current.label);
+    if (next === null) return;
+    const trimmed = next.trim();
+    if (!trimmed) return toast.error("Label cannot be empty");
+    setAssets((prev) => prev.map((a) => (a.id === id ? ({ ...a, label: trimmed } as Asset) : a)));
+    toast.success("Renamed");
+  }
+  function deleteAsset(id: string) {
+    const inUse = placements.some((p) => p.assetId === id);
+    if (inUse && !window.confirm("This stamp/signature is placed on the document. Delete anyway?")) return;
+    setAssets((prev) => prev.filter((a) => a.id !== id));
+    setPlacements((prev) => prev.filter((p) => p.assetId !== id));
+    toast.success("Deleted");
+  }
 
   function resolvePages(total: number): number[] {
     if (rangeMode === "all") return Array.from({ length: total }, (_, i) => i);
