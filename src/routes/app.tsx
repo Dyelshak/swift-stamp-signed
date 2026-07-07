@@ -86,7 +86,15 @@ function AppPage() {
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => setEmail(data.user?.email ?? null));
+    try {
+      const raw = localStorage.getItem(ASSETS_KEY);
+      if (raw) setAssets(JSON.parse(raw));
+    } catch {}
   }, []);
+
+  useEffect(() => {
+    try { localStorage.setItem(ASSETS_KEY, JSON.stringify(assets)); } catch {}
+  }, [assets]);
 
   async function signOut() {
     await supabase.auth.signOut();
