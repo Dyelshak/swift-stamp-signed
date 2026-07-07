@@ -498,10 +498,10 @@ function AppPage() {
       <StampDialog
         open={stampOpen}
         onOpenChange={setStampOpen}
-        onSave={(text, color, label) => {
-          setAssets((prev) => [...prev, { id: crypto.randomUUID(), kind: "stamp", text, color, label: label || text }]);
+        onSave={(asset) => {
+          setAssets((prev) => [...prev, asset]);
           setStampOpen(false);
-          toast.success("Stamp saved");
+          toast.success("Stamp added");
         }}
       />
     </div>
