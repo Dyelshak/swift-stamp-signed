@@ -79,7 +79,6 @@ function HistoryPage() {
         <div className="mx-auto flex h-14 max-w-[1400px] items-center justify-between px-4">
           <Link to="/" className="flex items-center gap-2">
             <img src={signStampMark.url} alt="" className="h-8 w-8 rounded-lg object-contain" />
-            <span className="font-display text-lg font-bold">SignStamp</span>
           </Link>
           <div className="flex items-center gap-3">
             <span className="hidden text-sm text-muted-foreground sm:inline">{email}</span>

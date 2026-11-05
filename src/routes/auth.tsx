@@ -68,7 +68,6 @@ function AuthPage() {
       <div className="mx-auto flex min-h-screen max-w-md flex-col justify-center px-6 py-12">
         <Link to="/" className="mb-8 flex items-center justify-center gap-2">
           <img src={signStampMark.url} alt="" className="h-10 w-10 rounded-lg object-contain" />
-          <span className="font-display text-2xl font-bold">SignStamp</span>
         </Link>
 
         <div className="rounded-2xl border border-border bg-card p-8 shadow-soft">

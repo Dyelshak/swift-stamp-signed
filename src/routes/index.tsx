@@ -64,7 +64,6 @@ function Landing() {
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
           <Link to="/" className="flex items-center gap-2">
             <img src={signStampMark.url} alt="" className="h-9 w-9 rounded-lg object-contain" />
-            <span className="font-display text-xl font-bold">SignStamp</span>
           </Link>
           <nav className="hidden items-center gap-8 text-sm font-medium text-muted-foreground md:flex">
             <a href="#features" className="hover:text-foreground">Features</a>
@@ -229,8 +228,7 @@ function Landing() {
       <footer className="border-t border-border py-10">
         <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-3 px-6 text-sm text-muted-foreground md:flex-row">
           <div className="flex items-center gap-2">
-            <img src={signStampMark.url} alt="" className="h-6 w-6 rounded object-contain" />
-            <span className="font-semibold text-foreground">SignStamp</span>
+            <img src={signStampMark.url} alt="SignStamp" className="h-8 w-8 rounded object-contain" />
           </div>
           <p>© {new Date().getFullYear()} SignStamp. All rights reserved.</p>
         </div>
