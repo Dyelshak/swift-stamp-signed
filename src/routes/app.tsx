@@ -376,9 +376,8 @@ function AppPage() {
       {/* Nav */}
       <header className="sticky top-0 z-30 border-b border-border bg-card">
         <div className="mx-auto flex h-14 max-w-[1400px] items-center justify-between px-4">
-          <Link to="/" className="flex items-center gap-2">
-            <img src={signStampMark.url} alt="" className="h-8 w-8 rounded-lg object-contain" />
-            <span className="font-display text-lg font-bold">SignStamp</span>
+          <Link to="/" aria-label="SignStamp home" className="flex items-center">
+            <img src={signStampMark.url} alt="SignStamp" className="h-10 w-10 rounded-lg object-contain" />
           </Link>
           <div className="flex items-center gap-3">
             <span className="hidden text-sm text-muted-foreground sm:inline">{email}</span>
