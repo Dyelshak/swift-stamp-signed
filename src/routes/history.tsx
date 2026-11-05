@@ -1,6 +1,6 @@
 import { createFileRoute, Link, redirect, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { ArrowLeft, Download, Eye, FileText, LogOut, Stamp as StampIcon, Trash2 } from "lucide-react";
+import { ArrowLeft, Download, Eye, FileText, LogOut, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import signStampMark from "@/assets/signstamp-mark.png.asset.json";
