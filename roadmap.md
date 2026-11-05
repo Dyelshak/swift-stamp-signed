@@ -1,0 +1,2 @@
+- [x] Replace the editor's sidebar brand label with the supplied icon.
+- [ ] Replace site brand labels with the supplied icon and set it as the favicon.
