@@ -1,8 +1,9 @@
 import { createFileRoute, Link, redirect, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { ArrowLeft, Download, Eye, FileText, LogOut, Stamp as StampIcon, Trash2 } from "lucide-react";
+import { ArrowLeft, Download, Eye, FileText, LogOut, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import signStampMark from "@/assets/signstamp-mark.png.asset.json";
 import { Button } from "@/components/ui/button";
 import type { HistoryEntry } from "./app";
 
@@ -77,10 +78,7 @@ function HistoryPage() {
       <header className="sticky top-0 z-30 border-b border-border bg-card">
         <div className="mx-auto flex h-14 max-w-[1400px] items-center justify-between px-4">
           <Link to="/" className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-brand shadow-brand">
-              <StampIcon className="h-4 w-4 text-primary-foreground" />
-            </div>
-            <span className="font-display text-lg font-bold">SignStamp</span>
+            <img src={signStampMark.url} alt="" className="h-8 w-8 rounded-lg object-contain" />
           </Link>
           <div className="flex items-center gap-3">
             <span className="hidden text-sm text-muted-foreground sm:inline">{email}</span>

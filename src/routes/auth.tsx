@@ -1,12 +1,13 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Stamp, Mail, Loader2 } from "lucide-react";
+import { Mail, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
+import signStampMark from "@/assets/signstamp-mark.png.asset.json";
 
 export const Route = createFileRoute("/auth")({
   component: AuthPage,
@@ -66,10 +67,7 @@ function AuthPage() {
     <div className="min-h-screen bg-hero">
       <div className="mx-auto flex min-h-screen max-w-md flex-col justify-center px-6 py-12">
         <Link to="/" className="mb-8 flex items-center justify-center gap-2">
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-brand shadow-brand">
-            <Stamp className="h-5 w-5 text-primary-foreground" />
-          </div>
-          <span className="font-display text-2xl font-bold">SignStamp</span>
+          <img src={signStampMark.url} alt="" className="h-10 w-10 rounded-lg object-contain" />
         </Link>
 
         <div className="rounded-2xl border border-border bg-card p-8 shadow-soft">
