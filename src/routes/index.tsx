@@ -19,6 +19,7 @@ import {
   ArrowRight,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import signStampMark from "@/assets/signstamp-mark.png.asset.json";
 
 export const Route = createFileRoute("/")({
   component: Landing,
@@ -62,9 +63,7 @@ function Landing() {
       <header className="sticky top-0 z-30 border-b border-border/60 bg-background/80 backdrop-blur">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
           <Link to="/" className="flex items-center gap-2">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-brand shadow-brand">
-              <Stamp className="h-5 w-5 text-primary-foreground" />
-            </div>
+            <img src={signStampMark.url} alt="" className="h-9 w-9 rounded-lg object-contain" />
             <span className="font-display text-xl font-bold">SignStamp</span>
           </Link>
           <nav className="hidden items-center gap-8 text-sm font-medium text-muted-foreground md:flex">
@@ -230,9 +229,7 @@ function Landing() {
       <footer className="border-t border-border py-10">
         <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-3 px-6 text-sm text-muted-foreground md:flex-row">
           <div className="flex items-center gap-2">
-            <div className="flex h-6 w-6 items-center justify-center rounded bg-gradient-brand">
-              <Stamp className="h-3.5 w-3.5 text-primary-foreground" />
-            </div>
+            <img src={signStampMark.url} alt="" className="h-6 w-6 rounded object-contain" />
             <span className="font-semibold text-foreground">SignStamp</span>
           </div>
           <p>© {new Date().getFullYear()} SignStamp. All rights reserved.</p>
